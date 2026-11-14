@@ -6,7 +6,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    python3 -m pip install -r requirements.txt
+                    python3 -m venv .venv
+                    .venv/bin/python -m pip install --upgrade pip
+                    .venv/bin/python -m pip install -r requirements.txt
                 '''
             }
         }
@@ -14,7 +16,12 @@ pipeline {
         stage('Run Flask Application') {
             steps {
                 sh '''
-                    nohup python3 app.py > flask.log 2>&1 &
+                    JENKINS_NODE_COOKIE=dontKillMe nohup .venv/bin/python app.py > flask.log 2>&1 &
+                    sleep 3
+                    if ! kill -0 $! 2>/dev/null; then
+                        cat flask.log
+                        exit 1
+                    fi
                 '''
             }
         }
